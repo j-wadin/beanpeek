@@ -40,4 +40,13 @@ public class BeanInspectorController {
         return beanInspectorService.getBeanDetails(beanName);
     }
 
+    @GetMapping("/beans/demo-annotation")
+    public List<String> getDemoBeans() {
+        return beanInspectorService.getBeansWithDemoBean();
+    }
+
+    @GetMapping("/beans/run-auto")
+    public void runAutoMethods() {
+        beanInspectorService.runAnnotatedMethods();
+    }
 }
