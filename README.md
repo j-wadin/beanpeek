@@ -17,12 +17,14 @@ This project helps you learn to:
 - Use `ApplicationContext` to interact with Spring Beans
 - Apply Java Reflection to inspect class and method metadata
 - Understand annotations and how frameworks like Spring use them
+- Observe bean lifecycle events (creation and destruction) using @PostConstruct and @PreDestroy
 
 ##  Dependencies
 
 - Java 21+
 - Spring Boot 3.2
 - Maven
+- Lombok
 
 ## Getting Started
 
@@ -40,9 +42,10 @@ This project helps you learn to:
     http://localhost:8080/inspect/beans
 
 ## Available Endpoints
-| Endpoint                                | Description                                  |
-|:----------------------------------------|:---------------------------------------------|
-| `/inspect/beans`                        | Lists all Spring beans                       |
-| `/inspect/beans/own`                    | Lists only your own application beans        |
-| `/inspect/beans/grouped`                | Groups beans by source (application, etc.)   |
-| `/inspect/beans/{beanName}/details`     | Shows annotations on the specified bean      |
+| Endpoint                            | Description                                       |
+|:------------------------------------|:--------------------------------------------------|
+| `/inspect/beans`                    | Lists all Spring beans                            |
+| `/inspect/beans/own`                | Lists only your own application beans             |
+| `/inspect/beans/grouped`            | Groups beans by source (application, etc.)        |
+| `/inspect/beans/{beanName}/details` | Shows annotations on the specified bean           |
+| `/inspect/beans/{beanName}/methods` | Shows annotations on the specified bean's methods |
