@@ -1,6 +1,7 @@
 package dev.jenniferwadin.beanpeek;
 
 import dev.jenniferwadin.beanpeek.framework.BeanContainer;
+import dev.jenniferwadin.beanpeek.framework.BeanScanner;
 import dev.jenniferwadin.beanpeek.service.HelloService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -12,10 +13,11 @@ public class BeanpeekApplication {
 
 		SpringApplication.run(BeanpeekApplication.class, args);
 
-		BeanContainer container = new BeanContainer();
-		container.registerBean(HelloService.class);
+		BeanContainer beanContainer = new BeanContainer();
+		BeanScanner beanScanner = new BeanScanner(beanContainer);
+		beanScanner.scanAndRegister("dev.jenniferwadin.beanpeek.service");
 
-		HelloService helloService = container.getBean(HelloService.class);
+		HelloService helloService = beanContainer.getBean(HelloService.class);
 		helloService.sayHi();
 	}
 
