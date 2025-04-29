@@ -1,23 +1,34 @@
 # 🫘 Beanpeek
 
-**Beanpeek** is an educational Spring Boot project designed to inspect and explore Spring Beans using Java Reflection.  
-It was built as a learning exercise to better understand how Spring manages components, and how to introspect runtime metadata in a Spring application.
+Beanpeek is a lightweight Java project for learning how dependency injection and reflection frameworks like Spring work internally.
 
-##  Features
+It attempts to implement a basic "mini Spring" that can:
+- Discover classes annotated with custom annotations
+- Create instances (beans) of these classes
+- Automatically run methods annotated with `@MiniPostConstruct`
+- Provide a simple container to retrieve created beans
 
-- List all Spring Beans in the application context
-- Filter and display only your own application beans
-- Group beans by source (application, Spring Boot, internal)
-- Display annotations on beans and their methods
+## Why?
 
-##  Learning Goals
+The goal of Beanpeek is educational:  
+To understand reflection, bean lifecycle, dependency injection, and how a framework like Spring Boot operates internally.
 
-This project helps you learn to:
+---
 
-- Use `ApplicationContext` to interact with Spring Beans
-- Apply Java Reflection to inspect class and method metadata
-- Understand annotations and how frameworks like Spring use them
-- Observe bean lifecycle events (creation and destruction) using @PostConstruct and @PreDestroy
+## How it works
+
+- Beans are registered manually
+- Each bean is instantiated once and stored in a container (`BeanContainer`)
+- `@MiniPostConstruct` methods are invoked after instantiation
+
+---
+
+## Custom Annotations
+
+| Annotation | Purpose |
+|------------|---------|
+| `@MiniService` | Marks a class as a bean to be managed |
+| `@MiniPostConstruct` | Marks a method to run after bean creation |
 
 ##  Dependencies
 
@@ -36,16 +47,3 @@ This project helps you learn to:
 2. Run the application
     ```bash
    ./mvnw spring-boot:run
-
-3. Open your browser
-   ```bash
-    http://localhost:8080/inspect/beans
-
-## Available Endpoints
-| Endpoint                            | Description                                       |
-|:------------------------------------|:--------------------------------------------------|
-| `/inspect/beans`                    | Lists all Spring beans                            |
-| `/inspect/beans/own`                | Lists only your own application beans             |
-| `/inspect/beans/grouped`            | Groups beans by source (application, etc.)        |
-| `/inspect/beans/{beanName}/details` | Shows annotations on the specified bean           |
-| `/inspect/beans/{beanName}/methods` | Shows annotations on the specified bean's methods |
