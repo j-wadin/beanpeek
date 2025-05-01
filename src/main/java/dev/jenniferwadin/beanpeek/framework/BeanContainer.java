@@ -4,6 +4,7 @@ import dev.jenniferwadin.beanpeek.annotation.MiniPostConstruct;
 import dev.jenniferwadin.beanpeek.annotation.MiniService;
 import lombok.extern.slf4j.Slf4j;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
@@ -19,32 +20,69 @@ public class BeanContainer {
     private final Map<Class<?>, Object> beans = new HashMap<>();
 
     /**
-     * Registers a bean if the class is annotated with @MiniService.
-     * Calls any methods annotated with @MiniPostConstruct.
+     * Attempts to register a bean if the class is annotated with @MiniService.
+
+     * - If the bean has no constructor parameters, it is instantiated directly.
+     * - If constructor parameters exist, the method checks if all required dependencies
+     *   are already available in the container. If they are, it creates the bean
+     *   with those dependencies injected.
+     * - If any required dependency is missing, the method returns false, so the scanner
+     *   can try registering the bean again later.
+
+     * After instantiation, any methods annotated with @MiniPostConstruct are executed.
+
+     * Note:
+     * - Only one bean instance per class is allowed.
+     * - Dependencies must be registered before this bean can be created.
      *
      * @param clazz the Class to register
+     * @return true if the bean was successfully created and registered; false otherwise
      */
-    public void registerBean(Class<?> clazz) throws NoSuchMethodException {
+    public boolean tryRegisterBean(Class<?> clazz) {
         try {
             if (!clazz.isAnnotationPresent(MiniService.class)) {
-                log.warn("Class {} is not annotated with @MiniService", clazz.getSimpleName());
-                return;
+                log.warn("Class {} is not annotated with MiniService", clazz.getSimpleName());
+                return false;
+            }
+            if(beans.containsKey(clazz)) {
+                return true;
             }
 
-            Object instance = clazz.getDeclaredConstructor().newInstance();
+            Object instance;
+            Constructor<?>[] constructors = clazz.getDeclaredConstructors();
+            Constructor<?> constructor = constructors[0];
+
+            if (constructor.getParameterCount() == 0) {
+                instance = clazz.getDeclaredConstructor().newInstance();
+            } else {
+                Class<?>[] parameterTypes = constructor.getParameterTypes();
+                Object[] dependencies = new Object[parameterTypes.length];
+
+                for (int i = 0; i < parameterTypes.length; i++) {
+                    Class<?> dependencyClass = parameterTypes[i];
+                    Object dependency = beans.get(dependencyClass);
+
+                    if (dependency == null) {
+                        return false; //dependency saknas fortfarande
+                    }
+                    dependencies[i] = dependency;
+                }
+                instance = constructor.newInstance(dependencies);
+            }
             beans.put(clazz, instance);
             log.info("Registered bean: {}", clazz.getSimpleName());
 
-            for (Method method : clazz.getDeclaredMethods()) {
-                if (method.isAnnotationPresent(MiniPostConstruct.class)) {
+            for(Method method : clazz.getDeclaredMethods()) {
+                if(method.isAnnotationPresent(MiniPostConstruct.class)) {
                     method.setAccessible(true);
-                    log.info("Running @MiniPostConstruct: {}.{}", clazz.getSimpleName(), method.getName());
+                    log.info("Running MiniPostConstruct: {}.{}", clazz.getSimpleName(), method.getName());
                     method.invoke(instance);
                 }
             }
+            return true;
 
-        } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
-            log.error("Failed to register bean {}: {}", clazz.getName(), e.getMessage());
+        } catch (InvocationTargetException | InstantiationException | IllegalAccessException | NoSuchMethodException e) {
+            throw new RuntimeException(e);
         }
     }
 
