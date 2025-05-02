@@ -1,6 +1,7 @@
 package dev.jenniferwadin.beanpeek.framework;
 
 import dev.jenniferwadin.beanpeek.annotation.MiniPostConstruct;
+import dev.jenniferwadin.beanpeek.annotation.MiniPreDestroy;
 import dev.jenniferwadin.beanpeek.annotation.MiniService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -84,6 +85,29 @@ public class BeanContainer {
         } catch (InvocationTargetException | InstantiationException | IllegalAccessException | NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void registerShutdownHook() {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            for (Map.Entry<Class<?>, Object> entry : beans.entrySet()) {
+                Object bean = entry.getValue();
+                Class<?> clazz = bean.getClass();
+                log.info("Shutdown initiated.");
+
+                for (Method method : clazz.getDeclaredMethods()) {
+                    if (method.isAnnotationPresent(MiniPreDestroy.class)) {
+                        try {
+                            method.setAccessible(true);
+                            log.info("Running MiniPreDestroy: {}.{}", clazz.getSimpleName(), method.getName());
+                            method.invoke(bean);
+                        } catch (InvocationTargetException | IllegalAccessException e) {
+                            log.error("Failed to execute MiniPreDestroy method {}: {}", method.getName(), e.getMessage());
+                        }
+                    }
+                }
+            }
+        }));
+
     }
 
     /**

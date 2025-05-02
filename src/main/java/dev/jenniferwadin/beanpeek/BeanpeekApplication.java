@@ -19,6 +19,8 @@ public class BeanpeekApplication {
 
 		HelloService helloService = beanContainer.getBean(HelloService.class);
 		helloService.sayHi();
+
+		beanContainer.registerShutdownHook();
 	}
 
 }

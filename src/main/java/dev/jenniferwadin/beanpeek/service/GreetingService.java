@@ -1,5 +1,6 @@
 package dev.jenniferwadin.beanpeek.service;
 
+import dev.jenniferwadin.beanpeek.annotation.MiniPreDestroy;
 import dev.jenniferwadin.beanpeek.annotation.MiniService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,5 +17,10 @@ public class GreetingService {
     public void greet() {
         helloService.sayHi();
         log.info("Greeting from GreetingService!");
+    }
+
+    @MiniPreDestroy
+    public void cleanUp() {
+        log.info("Cleaning up!");
     }
 }
