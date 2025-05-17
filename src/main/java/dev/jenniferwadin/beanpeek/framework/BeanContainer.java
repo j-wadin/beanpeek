@@ -22,16 +22,19 @@ public class BeanContainer {
 
     /**
      * Attempts to register a bean if the class is annotated with @MiniService.
-
-     * - If the bean has no constructor parameters, it is instantiated directly.
-     * - If constructor parameters exist, the method checks if all required dependencies
-     *   are already available in the container. If they are, it creates the bean
-     *   with those dependencies injected.
-     * - If any required dependency is missing, the method returns false, so the scanner
-     *   can try registering the bean again later.
-
+     *
+     * This method supports multiple constructors and will select the first one
+     * for which all required dependencies are already available in the container.
+     *
+     * - If the class has only one constructor, it will be used.
+     * - If the class has multiple constructors, the method tries each one in order
+     *   and selects the first constructor whose parameter types can be resolved
+     *   using existing beans.
+     * - If no suitable constructor is found, the method logs a warning with details
+     *   about all available constructors and returns false.
+     *
      * After instantiation, any methods annotated with @MiniPostConstruct are executed.
-
+     *
      * Note:
      * - Only one bean instance per class is allowed.
      * - Dependencies must be registered before this bean can be created.
@@ -41,50 +44,118 @@ public class BeanContainer {
      */
     public boolean tryRegisterBean(Class<?> clazz) {
         try {
-            if (!clazz.isAnnotationPresent(MiniService.class)) {
-                log.warn("Class {} is not annotated with MiniService", clazz.getSimpleName());
+            if (!isMiniService(clazz)) return false;
+            if(isBeanRegistered(clazz)) return true;
+
+            Constructor<?>[] constructors = clazz.getDeclaredConstructors();
+            Constructor<?> selectedConstructor = null;
+            Object[] resolvedDependencies = null;
+
+            for (Constructor<?> constructor : constructors) {
+                if(canResolve(constructor)) {
+                    selectedConstructor = constructor;
+                    resolvedDependencies = resolveDependencies(constructor);
+                    break;
+                }
+            }
+
+            if (selectedConstructor == null) {
+                log.warn("Could not resolve any constructor for {}", clazz.getSimpleName());
+                logConstructorList(clazz, constructors);
+                log.warn("Make sure all required dependencies are registered before this bean.");
                 return false;
             }
-            if(beans.containsKey(clazz)) {
-                return true;
-            }
 
-            Object instance;
-            Constructor<?>[] constructors = clazz.getDeclaredConstructors();
-            Constructor<?> constructor = constructors[0];
+            Object instance = selectedConstructor.newInstance(resolvedDependencies);
 
-            if (constructor.getParameterCount() == 0) {
-                instance = clazz.getDeclaredConstructor().newInstance();
-            } else {
-                Class<?>[] parameterTypes = constructor.getParameterTypes();
-                Object[] dependencies = new Object[parameterTypes.length];
-
-                for (int i = 0; i < parameterTypes.length; i++) {
-                    Class<?> dependencyClass = parameterTypes[i];
-                    Object dependency = beans.get(dependencyClass);
-
-                    if (dependency == null) {
-                        return false; //dependency saknas fortfarande
-                    }
-                    dependencies[i] = dependency;
-                }
-                instance = constructor.newInstance(dependencies);
-            }
             beans.put(clazz, instance);
             log.info("Registered bean: {}", clazz.getSimpleName());
 
-            for(Method method : clazz.getDeclaredMethods()) {
-                if(method.isAnnotationPresent(MiniPostConstruct.class)) {
+            invokePostConstructMethods(instance);
+            return true;
+
+        } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private boolean isBeanRegistered(Class<?> clazz) {
+        return beans.containsKey(clazz);
+    }
+
+    private static boolean isMiniService(Class<?> clazz) {
+        return clazz.isAnnotationPresent(MiniService.class);
+    }
+
+    private static void invokePostConstructMethods(Object instance) throws IllegalAccessException, InvocationTargetException {
+        Class<?> clazz = instance.getClass();
+
+        for(Method method : clazz.getDeclaredMethods()) {
+            if(method.isAnnotationPresent(MiniPostConstruct.class)) {
+                try {
                     method.setAccessible(true);
                     log.info("Running MiniPostConstruct: {}.{}", clazz.getSimpleName(), method.getName());
                     method.invoke(instance);
+                } catch (Exception e) {
+                    log.error("Failed to execute @MiniPostConstruct method {}: {}", method.getName(), e.getMessage());
                 }
             }
-            return true;
-
-        } catch (InvocationTargetException | InstantiationException | IllegalAccessException | NoSuchMethodException e) {
-            throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Logs all constructors and their parameter types for the given class.
+     * Used for debugging when no constructor can be resolved due to
+     * missing dependencies.
+     *
+     * @param clazz the class whose constructors will be printed
+     * @param constructors the list of constructors to log
+     */
+    private static void logConstructorList(Class<?> clazz, Constructor<?>[] constructors) {
+        for (Constructor<?> constructor : constructors) {
+            StringBuilder sb = new StringBuilder(" - ").append(clazz.getSimpleName()).append("(");
+            Class<?>[] parameterTypes = constructor.getParameterTypes();
+            for (int i = 0; i < parameterTypes.length; i++) {
+                sb.append(parameterTypes[i].getSimpleName());
+                if (i < parameterTypes.length - 1) sb.append(", ");
+            }
+            sb.append(")");
+            log.warn(sb.toString());
+        }
+    }
+
+    /**
+     * Checks whether all parameter types required by the given constructor
+     * are already available as beans in the container.
+     *
+     * @param constructor the constructor to evaluate
+     * @return true if all dependencies can be resolved, false otherwise
+     */
+    private boolean canResolve(Constructor<?> constructor) {
+        for (Class<?> type : constructor.getParameterTypes()) {
+            if (!beans.containsKey(type)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Resolves the dependencies for the given constructor by retrieving
+     * instances from the bean container.
+     * This method assumes all dependencies can be resolved.
+     *
+     * @param constructor the constructor whose parameters will be resolved
+     * @return an array of objects to be used as constructor arguments
+     */
+    private Object[] resolveDependencies(Constructor<?> constructor) {
+        Class<?>[] parameterTypes = constructor.getParameterTypes();
+        Object[] resolvedDependencies = new Object[parameterTypes.length];
+
+        for (int i = 0; i < parameterTypes.length; i++) {
+            resolvedDependencies[i] = beans.get(parameterTypes[i]);
+        }
+        return resolvedDependencies;
     }
 
     public void registerShutdownHook() {
