@@ -6,6 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 
+/**
+ * Creates a proxy for a bean if any of its methods are annotated with @LogExecutionTime.
+ * Uses JDK dynamic proxies, so the target class must implement at least one interface.
+ */
 @Slf4j
 public class ProxyFactory {
 

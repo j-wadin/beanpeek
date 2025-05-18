@@ -6,6 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 
+/**
+ * Intercepts method calls and logs execution time for methods annotated with @LogExecutionTime.
+ * Used by proxies created in ProxyFactory.
+ */
 @Slf4j
 public class TimingInvocationHandler implements InvocationHandler {
 
