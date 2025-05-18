@@ -1,4 +1,4 @@
-package dev.jenniferwadin.beanpeek.service;
+package dev.jenniferwadin.beanpeek.examples;
 
 import dev.jenniferwadin.beanpeek.annotation.MiniPostConstruct;
 import dev.jenniferwadin.beanpeek.annotation.MiniService;

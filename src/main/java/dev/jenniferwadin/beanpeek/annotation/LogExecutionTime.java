@@ -6,10 +6,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marks a method to be executed after a Bean has been constructed.
- * Similar to Java's @PostConstruct.
+ * Marks that a method's execution time should be measured and logged.
+ * This annotation should be used on methods inside beans registered via @MiniService.
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface MiniPostConstruct {
+public @interface LogExecutionTime {
 }

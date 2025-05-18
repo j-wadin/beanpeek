@@ -22,19 +22,15 @@ public class BeanContainer {
 
     /**
      * Attempts to register a bean if the class is annotated with @MiniService.
-     *
      * This method supports multiple constructors and will select the first one
-     * for which all required dependencies are already available in the container.
-     *
+     * for which all requird dependencies are already available in the container.
      * - If the class has only one constructor, it will be used.
      * - If the class has multiple constructors, the method tries each one in order
      *   and selects the first constructor whose parameter types can be resolved
      *   using existing beans.
      * - If no suitable constructor is found, the method logs a warning with details
      *   about all available constructors and returns false.
-     *
      * After instantiation, any methods annotated with @MiniPostConstruct are executed.
-     *
      * Note:
      * - Only one bean instance per class is allowed.
      * - Dependencies must be registered before this bean can be created.
@@ -66,7 +62,8 @@ public class BeanContainer {
                 return false;
             }
 
-            Object instance = selectedConstructor.newInstance(resolvedDependencies);
+            Object rawInstance = selectedConstructor.newInstance(resolvedDependencies);
+            Object instance = ProxyFactory.createProxyIfNeeded(clazz, rawInstance);
 
             beans.put(clazz, instance);
             log.info("Registered bean: {}", clazz.getSimpleName());
@@ -182,13 +179,30 @@ public class BeanContainer {
     }
 
     /**
-     * Retrieves a bean instance by its class type.
+     * Retrieves a bean instance from the container that matches the given type.
+     * Lookup strategy:
+     * 1. First tries to find a bean registered directly with the given class as key.
+     * 2. If not found, searches all beans for one whose class implements or extends the given type.
+     * This allows beans to be retrieved by interface or superclass, even when
+     * a proxy is used or the concrete class is unknown.
      *
-     * @param clazz the Class of the bean
-     * @param <T> the type of the bean
-     * @return the bean instance
+     * @param clazz the desired class or interface
+     * @param <T> the type of the bean to return
+     * @return the matching bean instance, or null if no match is found
      */
+    @SuppressWarnings("unchecked")
     public <T> T getBean(Class<T> clazz) {
-        return clazz.cast(beans.get(clazz));
+        Object directHit = beans.get(clazz);
+        if (directHit != null) {
+            return (T) directHit;
+        }
+
+        for (Object bean : beans.values()) {
+            if (clazz.isAssignableFrom(bean.getClass())) {
+                return (T) bean;
+            }
+        }
+        log.warn("No bean found for type: {}", clazz.getSimpleName());
+        return null;
     }
 }

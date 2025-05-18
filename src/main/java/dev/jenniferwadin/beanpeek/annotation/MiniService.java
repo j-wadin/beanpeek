@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation to mark a class as a Bean managed by the BeanContainer.
+ * Marks a class as a Bean managed by the BeanContainer.
  * Similar to Spring's @Service.
  */
 @Target(ElementType.TYPE)
