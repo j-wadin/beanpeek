@@ -1,5 +1,6 @@
 package dev.jenniferwadin.beanpeek;
 
+import dev.jenniferwadin.beanpeek.examples.GreetingService;
 import dev.jenniferwadin.beanpeek.examples.MathService;
 import dev.jenniferwadin.beanpeek.framework.BeanContainer;
 import dev.jenniferwadin.beanpeek.framework.BeanScanner;
@@ -22,6 +23,9 @@ public class BeanpeekApplication {
 
 		HelloService helloService = beanContainer.getBean(HelloService.class);
 		helloService.sayHi();
+
+		GreetingService greetingService = beanContainer.getBean(GreetingService.class);
+		greetingService.greet();
 
 		MathService mathService = beanContainer.getBean(MathService.class);
 		int result = mathService.slowAddition(2,3);

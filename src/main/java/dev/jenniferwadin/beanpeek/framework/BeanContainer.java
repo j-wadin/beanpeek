@@ -1,11 +1,13 @@
 package dev.jenniferwadin.beanpeek.framework;
 
+import dev.jenniferwadin.beanpeek.annotation.MiniConfigProperty;
 import dev.jenniferwadin.beanpeek.annotation.MiniPostConstruct;
 import dev.jenniferwadin.beanpeek.annotation.MiniPreDestroy;
 import dev.jenniferwadin.beanpeek.annotation.MiniService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
@@ -19,6 +21,7 @@ import java.util.Map;
 public class BeanContainer {
 
     private final Map<Class<?>, Object> beans = new HashMap<>();
+    private final MiniConfiguration config = new MiniConfiguration();
 
     /**
      * Attempts to register a bean if the class is annotated with @MiniService.
@@ -69,6 +72,7 @@ public class BeanContainer {
             log.info("Registered bean: {}", clazz.getSimpleName());
 
             invokePostConstructMethods(instance);
+            setMiniConfigProperties(instance);
             return true;
 
         } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
@@ -82,6 +86,10 @@ public class BeanContainer {
 
     private static boolean isMiniService(Class<?> clazz) {
         return clazz.isAnnotationPresent(MiniService.class);
+    }
+
+    private static boolean isMiniConfigProperty(Field field) {
+        return field.isAnnotationPresent(MiniConfigProperty.class);
     }
 
     private static void invokePostConstructMethods(Object instance) throws IllegalAccessException, InvocationTargetException {
@@ -98,6 +106,41 @@ public class BeanContainer {
                 }
             }
         }
+    }
+
+    private void setMiniConfigProperties(Object instance) {
+        Class<?> clazz = instance.getClass();
+
+        for (Field field : clazz.getDeclaredFields()) {
+            if(isMiniConfigProperty(field)) {
+                try {
+                    field.setAccessible(true);
+                    log.info("Setting MiniConfigProperty: {}.{}", clazz.getSimpleName(), field.getName());
+                    Class<?> fieldType = field.getType();
+                    String value = this.config.get(field.getAnnotation(MiniConfigProperty.class).value());
+                    Object convertedValue = getConvertedValue(fieldType, value);
+                    field.set(instance, convertedValue);
+                } catch (IllegalAccessException e) {
+                    log.error("Failed to set MiniConfigProperty: {}.{}", clazz.getSimpleName(), field.getName());
+                }
+            }
+        }
+    }
+
+    private static Object getConvertedValue(Class<?> fieldType, String value) {
+        Object convertedValue;
+        if (fieldType == String.class) {
+            convertedValue = value;
+        } else if (fieldType == int.class || fieldType == Integer.class) {
+            convertedValue = Integer.parseInt(value);
+        } else if (fieldType == boolean.class || fieldType == Boolean.class) {
+            convertedValue = Boolean.parseBoolean(value);
+        } else if (fieldType == double.class || fieldType == Double.class) {
+            convertedValue = Double.parseDouble(value);
+        } else {
+            throw new IllegalArgumentException("Unsupported config type: " + fieldType.getName());
+        }
+        return convertedValue;
     }
 
     /**

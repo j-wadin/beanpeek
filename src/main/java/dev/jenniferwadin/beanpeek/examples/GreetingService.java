@@ -1,5 +1,6 @@
 package dev.jenniferwadin.beanpeek.examples;
 
+import dev.jenniferwadin.beanpeek.annotation.MiniConfigProperty;
 import dev.jenniferwadin.beanpeek.annotation.MiniPreDestroy;
 import dev.jenniferwadin.beanpeek.annotation.MiniService;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 public class GreetingService {
 
     private final HelloService helloService;
+    @MiniConfigProperty("welcome.message")
+    private String message;
 
     public GreetingService(HelloService helloService) {
         this.helloService = helloService;
@@ -16,7 +19,7 @@ public class GreetingService {
 
     public void greet() {
         helloService.sayHi();
-        log.info("Greeting from GreetingService!");
+        log.info(message);
     }
 
     @MiniPreDestroy
