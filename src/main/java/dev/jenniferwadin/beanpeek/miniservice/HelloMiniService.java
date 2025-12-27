@@ -1,4 +1,4 @@
-package dev.jenniferwadin.beanpeek.examples;
+package dev.jenniferwadin.beanpeek.miniservice;
 
 import dev.jenniferwadin.beanpeek.annotation.MiniPostConstruct;
 import dev.jenniferwadin.beanpeek.annotation.MiniService;
@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @MiniService
-public class HelloService {
+public class HelloMiniService {
 
     @MiniPostConstruct
     public void init() {

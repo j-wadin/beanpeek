@@ -1,10 +1,10 @@
-package dev.jenniferwadin.beanpeek.examples;
+package dev.jenniferwadin.beanpeek.miniservice;
 
 import dev.jenniferwadin.beanpeek.annotation.LogExecutionTime;
 import dev.jenniferwadin.beanpeek.annotation.MiniService;
 
 @MiniService
-public class MathServiceImpl implements MathService{
+public class MathMiniServiceImpl implements MathMiniService {
 
     @Override
     @LogExecutionTime
