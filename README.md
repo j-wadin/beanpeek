@@ -1,39 +1,83 @@
-# 🫘 Beanpeek
+# Beanpeek
 
-Beanpeek is a lightweight Java project for learning how dependency injection and reflection frameworks like Spring work internally.
+Beanpeek is a **pedagogical Java project** that reimplements core ideas from the Spring Framework in a simplified, explicit way.
 
-It attempts to implement a basic "mini Spring" that can:
-- Discover classes annotated with custom annotations
-- Create instances (beans) of these classes
-- Automatically run methods annotated with `@MiniPostConstruct`
-- Provide a simple container to retrieve created beans
-
-## Why?
-
-The goal of Beanpeek is educational:  
-To understand reflection, bean lifecycle, dependency injection, and how a framework like Spring Boot operates internally.
+The goal is not to build a production framework, but to understand and explain how Spring works internally.
 
 ---
 
-## How it works
+## Purpose
 
-- Beans are registered manually
-- Each bean is instantiated once and stored in a container (`BeanContainer`)
-- `@MiniPostConstruct` methods are invoked after instantiation
+Beanpeek exists to answer questions like:
+
+- What actually happens when Spring creates a bean?
+- How does constructor injection work?
+- When are `@PostConstruct` and `@PreDestroy` methods invoked?
+- Why does Spring sometimes return proxies instead of real objects?
+- How can annotations drive behavior at runtime?
+
+---
+
+## What Beanpeek Reimplements (in simplified form)
+
+Beanpeek recreates several core Spring concepts:
+
+- **Component scanning**  
+  Discover classes annotated with `@MiniService`
+
+- **Dependency injection**  
+  Constructor-based injection with dependency resolution
+
+- **Bean lifecycle**
+   - `@MiniPostConstruct`
+   - `@MiniPreDestroy`
+
+- **Configuration property injection**
+   - `@MiniConfigProperty` backed by `application.properties`
+
+- **AOP via proxies**
+   - Method interception using JDK dynamic proxies
+   - Example: `@LogExecutionTime`
+
+All behavior is implemented manually using:
+- Java reflection
+- Classpath scanning
+- Dynamic proxies
 
 ---
 
 ## Custom Annotations
-
 | Annotation | Purpose |
-|------------|---------|
-| `@MiniService` | Marks a class as a bean to be managed |
-| `@MiniPostConstruct` | Marks a method to run after bean creation |
+|-----------|---------|
+| `@MiniService` | Marks a class as a managed bean |
+| `@MiniPostConstruct` | Runs after bean construction |
+| `@MiniPreDestroy` | Runs during shutdown |
+| `@MiniConfigProperty` | Injects values from `application.properties` |
+| `@LogExecutionTime` | Measures method execution time via proxy |
+
+
+## How It Works
+
+1. `BeanScanner` scans a package for classes annotated with `@MiniService`
+2. `BeanContainer`:
+   - Resolves constructor dependencies
+   - Instantiates beans
+   - Injects configuration properties
+   - Runs lifecycle hooks
+3. Beans with AOP annotations are wrapped in proxies
+4. Beans are retrieved from the container via type lookup
+
+## What This Project Is Not
+- Not Spring
+- Not Spring Boot
+- Not production-ready
+- Not optimized for performance
+
+This is a learning and teaching tool.
 
 ##  Dependencies
 
 - Java 21+
-- Spring Boot 3.2
 - Maven
 - Lombok
 
@@ -41,7 +85,7 @@ To understand reflection, bean lifecycle, dependency injection, and how a framew
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/<your-username>/beanpeek.git
+   git clone https://github.com/j-wadin/beanpeek.git
    cd beanpeek
 
 2. Run the application

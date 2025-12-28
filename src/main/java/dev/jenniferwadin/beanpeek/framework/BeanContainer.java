@@ -26,7 +26,7 @@ public class BeanContainer {
     /**
      * Attempts to register a bean if the class is annotated with @MiniService.
      * This method supports multiple constructors and will select the first one
-     * for which all requird dependencies are already available in the container.
+     * for which all required dependencies are already available in the container.
      * - If the class has only one constructor, it will be used.
      * - If the class has multiple constructors, the method tries each one in order
      *   and selects the first constructor whose parameter types can be resolved
